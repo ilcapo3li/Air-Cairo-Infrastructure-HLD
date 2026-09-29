@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Air Cairo Cargo infrastructure-only technical proposal and Azure high-level design.">
+  <meta property="og:title" content="Air Cairo Cargo | Hosting Infrastructure HLD">
+  <meta property="og:description" content="Two-continent Azure hosting architecture, disaster recovery, operations, and commercial overview.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Air Cairo Cargo | Hosting Infrastructure HLD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link `rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #f6f9fc;
+      --muted: #92a4b8;
+      --dim: #60758b;
+      --canvas: #07111c;
+      --panel: #0c1926;
+      --panel-2: #101f2e;
+      --line: #243849;
+      --azure: #29a8e8;
+      --cyan: #55d7e8;
+      --green: #50d3a0;
+      --amber: #f3b957;
+      --cloudflare: #f48120;
+      --danger: #f17978;
+      --radius: 7px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--canvas); color: var(--ink); }
+    body { font-family: "Manrope", system-ui, sans-serif; letter-spacing: 0; }
+    button, a { font: inherit; }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(7,17,28,.75), rgba(7,17,28,.97)),
+        repeating-linear-gradient(90deg, transparent 0, transparent 63px, rgba(85,215,232,.035) 64px),
+        repeating-linear-gradient(0deg, transparent 0, transparent 63px, rgba(85,215,232,.035) 64px);
+    }
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto;
+      height: 3px;
+      background: linear-gradient(90deg, var(--cloudflare) 0 18%, var(--azure) 18% 86%, var(--green) 86%);
+      z-index: 10;
+    }
+
+    .canvas { width: min(1500px, 100%); margin: 0 auto; padding: 15px 22px 13px; }
+    .topbar { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 16px; padding-bottom: 11px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .brand-mark { display: grid; grid-template-columns: repeat(2, 9px); gap: 2px; flex: none; }
+    .brand-mark i { width: 9px; height: 9px; display: block; }
+    .brand-mark i:nth-child(1) { background: #f35325; }
+    .brand-mark i:nth-child(2) { background: #81bc06; }
+    .brand-mark i:nth-child(3) { background: #05a6f0; }
+    .brand-mark i:nth-child(4) { background: #ffba08; }
+    .brand strong { display: block; font-size: 13px; line-height: 1.2; }
+    .brand small, .mono { font-family: "Space Mono", monospace; }
+    .brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 7.5px; text-transform: uppercase; letter-spacing: .08em; }
+    .scope { color: var(--muted); font: 700 8px "Space Mono", monospace; text-transform: uppercase; white-space: nowrap; }
+    .scope b { color: var(--green); }
+    .cost-head { display: flex; align-items: baseline; gap: 9px; padding: 6px 10px; border: 1px solid #315069; border-radius: var(--radius); background: #0c1c2b; }
+    .cost-head small { color: var(--muted); font: 700 7px "Space Mono", monospace; text-transform: uppercase; }
+    .cost-head strong { color: var(--cyan); font-size: 12px; }
+
+    .intro { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 18px; padding: 12px 0 10px; }
+    .eyebrow { color: var(--azure); font: 700 8px "Space Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
+    h1 { margin: 3px 0 0; font-size: clamp(22px, 2.6vw, 36px); line-height: 1.05; font-weight: 800; }
+    .intro p { margin: 5px 0 0; max-width: 730px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .metrics { display: flex; gap: 7px; }
+    .metric { min-width: 74px; padding: 7px 9px; border-left: 2px solid var(--azure); background: rgba(16,31,46,.72); }
+    .metric b { display: block; font-size: 12px; }
+    .metric span { display: block; margin-top: 2px; color: var(--muted); font: 400 6.5px "Space Mono", monospace; text-transform: uppercase; }
+
+    .flowbar { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 11px; margin-bottom: 9px; }
+    .flowbar-label { display: flex; align-items: center; gap: 6px; color: var(--muted); font: 700 7px "Space Mono", monospace; text-transform: uppercase; }
+    .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px var(--green); animation: pulse 2s ease-in-out infinite; }
+    .flowline { position: relative; height: 1px; background: linear-gradient(90deg, var(--cloudflare), var(--azure) 45%, var(--green)); }
+    .flowline::after { content: "›"; position: absolute; right: -1px; top: -10px; color: var(--green); font-size: 18px; }
+
+    .architecture { display: grid; grid-template-columns: 176px minmax(0,1.65fr) minmax(0,1fr) 194px; gap: 9px; }
+    .stack { display: grid; gap: 9px; min-width: 0; }
+    .stack.left { grid-template-rows: .82fr 1.18fr; }
+    .stack.center { grid-template-rows: 1fr auto; }
+    .stack.right { grid-template-rows: 1fr auto; }
+    .panel { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(145deg, rgba(16,31,46,.95), rgba(9,23,35,.93)); padding: 10px; }
+    .panel.edge { border-top: 2px solid var(--cloudflare); }
+    .panel.primary { border-top: 2px solid var(--azure); }
+    .panel.dr { border-top: 2px solid var(--amber); }
+    .panel.devops { border-top: 2px solid var(--green); }
+    .panel.ops { border-left: 2px solid var(--cyan); }
+    .panel.nonprod { border-left: 2px solid var(--dim); }
+    .panel::after { content: ""; pointer-events: none; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(110deg, rgba(255,255,255,.025), transparent 34%); }
+    .panel-head { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .zone { color: var(--dim); font: 700 6.7px "Space Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .panel h2 { margin: 2px 0 0; font-size: 13px; line-height: 1.2; }
+    .panel-note { color: var(--muted); font-size: 7.5px; line-height: 1.35; }
+    .status { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 3px 5px; border: 1px solid var(--line); border-radius: 20px; color: var(--muted); font: 700 6px "Space Mono", monospace; }
+    .status::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+    .status.live { color: var(--green); border-color: rgba(80,211,160,.35); }
+    .status.warm { color: var(--amber); border-color: rgba(243,185,87,.35); }
+
+    .service-list { position: relative; z-index: 1; display: grid; gap: 5px; }
+    .service { display: grid; grid-template-columns: 25px minmax(0,1fr); align-items: center; gap: 7px; min-height: 34px; padding: 5px 6px; border: 1px solid #203749; border-radius: 5px; background: #0b1b29; }
+    .icon { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 4px; color: var(--azure); background: rgba(41,168,232,.1); border: 1px solid rgba(41,168,232,.23); }
+    .icon.orange { color: var(--cloudflare); background: rgba(244,129,32,.1); border-color: rgba(244,129,32,.25); }
+    .icon.green { color: var(--green); background: rgba(80,211,160,.1); border-color: rgba(80,211,160,.22); }
+    .icon.amber { color: var(--amber); background: rgba(243,185,87,.1); border-color: rgba(243,185,87,.22); }
+    .icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .service b { display: block; overflow: hidden; color: #ecf5fc; font-size: 8px; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; }
+    .service small { display: block; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 6.7px; line-height: 1.15; white-space: nowrap; text-overflow: ellipsis; }
+
+    .scale-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px; }
+    .scale-card { min-width: 0; padding: 7px; border: 1px solid #254159; border-radius: 5px; background: #0a1d2c; }
+    .scale-top { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+    .scale-card b { overflow: hidden; font-size: 8px; white-space: nowrap; text-overflow: ellipsis; }
+    .nodes { display: flex; align-items: center; gap: 3px; }
+    .node { width: 10px; height: 14px; border: 1px solid var(--azure); border-radius: 2px; background: rgba(41,168,232,.16); }
+    .node.elastic { border-style: dashed; opacity: .5; }
+    .scale-card small { display: block; margin-top: 5px; color: var(--muted); font-size: 6.5px; }
+    .network-rail { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; margin: 7px 0; color: var(--muted); font: 400 6.5px "Space Mono", monospace; }
+    .network-rail::before, .network-rail::after { content: ""; height: 1px; flex: 1; background: #2a4d67; }
+    .data-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+    .data-item { min-width: 0; padding: 6px; border: 1px solid #22394c; border-radius: 5px; background: #0a1825; }
+    .data-item strong { display: block; overflow: hidden; color: var(--cyan); font-size: 7px; white-space: nowrap; text-overflow: ellipsis; }
+    .data-item span { display: block; margin-top: 2px; overflow: hidden; color: var(--muted); font-size: 6px; white-space: nowrap; text-overflow: ellipsis; }
+
+    .replication { display: grid; gap: 5px; margin: 7px 0; }
+    .rep-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding-bottom: 5px; border-bottom: 1px dashed #30465a; color: var(--muted); font-size: 6.8px; }
+    .rep-row b { color: var(--amber); font: 700 6px "Space Mono", monospace; }
+    .dr-services { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+    .dr-item { padding: 6px; border: 1px solid #33404a; border-radius: 5px; background: #121c25; }
+    .dr-item strong { display: block; font-size: 7.2px; }
+    .dr-item span { display: block; margin-top: 2px; color: var(--muted); font-size: 6px; }
+    .failover { margin-top: 7px; padding: 6px; border: 1px solid rgba(243,185,87,.25); border-radius: 5px; background: rgba(243,185,87,.06); color: var(--amber); font: 700 6px "Space Mono", monospace; text-align: center; }
+
+    .ops-row { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+    .ops-item { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 6px; border: 1px solid #244052; border-radius: 4px; background: #0a1926; }
+    .ops-item i { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(85,215,232,.6); }
+    .ops-item span { overflow: hidden; color: var(--muted); font-size: 6.5px; white-space: nowrap; text-overflow: ellipsis; }
+
+    .pipeline { position: relative; z-index: 1; display: grid; gap: 5px; }
+    .pipeline::before { content: ""; position: absolute; top: 15px; bottom: 15px; left: 11px; width: 1px; background: linear-gradient(var(--green), var(--azure), #2b4256); }
+    .pipe-step { position: relative; display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 6px; min-height: 32px; padding: 4px 5px; border: 1px solid #243b4f; border-radius: 5px; background: #0a1926; }
+    .pipe-num { z-index: 1; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 4px; color: var(--green); background: #0d2630; border: 1px solid rgba(80,211,160,.28); font: 700 6px "Space Mono", monospace; }
+    .pipe-step b { display: block; font-size: 7.5px; }
+    .pipe-step small { display: block; margin-top: 1px; color: var(--muted); font-size: 6px; }
+    .release-path { margin-top: 7px; color: var(--green); font: 700 6px "Space Mono", monospace; line-height: 1.5; }
+
+    .envs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+    .env { padding: 6px; border: 1px solid #263b4d; border-radius: 4px; background: #0a1824; }
+    .env strong { display: block; font-size: 7.2px; }
+    .env span { display: block; margin-top: 2px; color: var(--muted); font-size: 6px; }
+
+    .commercial { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; margin-top: 9px; }
+    .commercial-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(12,25,38,.94); }
+    .commercial-card .number { color: var(--cyan); font-size: 15px; font-weight: 800; white-space: nowrap; }
+    .commercial-card h3 { margin: 0; font-size: 8px; }
+    .commercial-card p { margin: 2px 0 0; color: var(--muted); font-size: 6.5px; line-height: 1.3; }
+    .commercial-card.setup .number { color: var(--green); }
+    .commercial-card.support .number { color: var(--amber); }
+
+    .pricing-ledger { margin-top: 9px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(9,23,35,.96); overflow: hidden; }
+    .pricing-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .pricing-title h2 { margin: 2px 0 0; font-size: 13px; }
+    .pricing-title p { margin: 0; max-width: 560px; color: var(--muted); font-size: 7px; line-height: 1.4; text-align: right; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .price-column { min-width: 0; padding: 10px 12px; border-right: 1px solid var(--line); }
+    .price-column:last-child { border-right: 0; }
+    .price-column-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .price-column-head h3 { margin: 0; color: var(--ink); font-size: 8.5px; }
+    .price-column-head span { color: var(--cyan); font: 700 7px "Space Mono", monospace; white-space: nowrap; }
+    .price-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: baseline; padding: 3px 0; border-bottom: 1px dotted #24394a; }
+    .price-row:last-child { border-bottom: 0; }
+    .price-row span { min-width: 0; color: var(--muted); font-size: 6.6px; line-height: 1.25; }
+    .price-row strong { color: var(--ink); font: 700 6.6px "Space Mono", monospace; white-space: nowrap; }
+    .price-row.total { margin-top: 3px; padding-top: 5px; border-top: 1px solid #355268; border-bottom: 0; }
+    .price-row.total span, .price-row.total strong { color: var(--cyan); }
+    .price-row.optional span, .price-row.optional strong { color: var(--amber); }
+    .year-one { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-top: 1px solid var(--line); background: #0c1b29; }
+    .year-cell { padding: 9px 12px; border-right: 1px solid var(--line); }
+    .year-cell:last-child { border-right: 0; }
+    .year-cell span { display: block; color: var(--muted); font: 400 6px "Space Mono", monospace; text-transform: uppercase; }
+    .year-cell strong { display: block; margin-top: 3px; color: var(--ink); font-size: 11px; }
+    .year-cell.grand strong { color: var(--green); }
+
+    footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 8px; color: var(--dim); font-size: 6.5px; }
+    footer strong { color: var(--muted); }
+    .print { cursor: pointer; border: 0; border-bottom: 1px solid var(--dim); padding: 0 0 2px; background: transparent; color: var(--muted); font: 700 6.5px "Space Mono", monospace; }
+
+    @keyframes pulse { 50% { opacity: .45; box-shadow: 0 0 2px var(--green); } }
+    @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+    @media (min-width: 1180px) and (min-height: 760px) {
+      .canvas { padding-top: 22px; }
+      .architecture { grid-template-columns: 190px minmax(0,1.65fr) minmax(0,1fr) 210px; }
+      .panel { padding: 12px; }
+      .service { min-height: 38px; }
+    }
+
+    @media (max-width: 1040px) {
+      .canvas { padding-inline: 14px; }
+      .architecture { grid-template-columns: 155px minmax(0,1.65fr) minmax(0,1fr) 170px; gap: 7px; }
+      .panel { padding: 8px; }
+      .service { grid-template-columns: 21px minmax(0,1fr); gap: 5px; padding-inline: 4px; }
+      .icon { width: 21px; height: 23px; }
+      .icon svg { width: 13px; height: 13px; }
+      .metric { min-width: 66px; padding-inline: 7px; }
+    }
+
+    @media (max-width: 820px) {
+      .page { overflow: auto; }
+      .topbar { grid-template-columns: 1fr auto; }
+      .scope { display: none; }
+      .intro { grid-template-columns: 1fr; align-items: start; }
+      .metrics { display: grid; grid-template-columns: repeat(3,1fr); }
+      .architecture { grid-template-columns: 1fr; }
+      .stack, .stack.left, .stack.center, .stack.right { display: grid; grid-template-rows: auto; }
+      .stack.left { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .scale-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .commercial { grid-template-columns: 1fr; }
+      .commercial-card { grid-template-columns: 115px 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .price-column { border-right: 0; border-bottom: 1px solid var(--line); }
+      .price-column:last-child { border-bottom: 0; }
+      .year-one { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .year-cell:nth-child(2) { border-right: 0; }
+      .year-cell:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .service b, .scale-card b { font-size: 9px; }
+      .service small, .scale-card small, .data-item span, .dr-item span, .env span, .commercial-card p { font-size: 7px; }
+      .panel h2 { font-size: 14px; }
+    }
+
+    @media (max-width: 520px) {
+      .canvas { padding: 14px 10px; }
+      .topbar { grid-template-columns: 1fr; gap: 9px; }
+      .cost-head { justify-content: space-between; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { display: flex; align-items: baseline; justify-content: space-between; }
+      .stack.left { grid-template-columns: 1fr; }
+      .scale-grid, .data-grid, .ops-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .flowbar { grid-template-columns: 1fr; }
+      .pricing-title { align-items: flex-start; flex-direction: column; }
+      .pricing-title p { text-align: left; }
+      .year-one { grid-template-columns: 1fr; }
+      .year-cell, .year-cell:nth-child(2) { border-right: 0; border-bottom: 1px solid var(--line); }
+      .year-cell:last-child { border-bottom: 0; }
+      footer { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media print {
+      @page { size: A3 landscape; margin: 7mm; }
+      body, .page { background: var(--canvas) !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .canvas { width: 100%; padding: 0; }
+      .print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="canvas">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-label="Microsoft Azure"><i></i><i></i><i></i><i></i></span>
+          <div><strong>Air Cairo Cargo</strong><small>Hosting, infrastructure &amp; operations · Technical proposal</small></div>
+        </div>
+        <div class="scope"><b>●</b> Infrastructure only · Draft v3</div>
+        <div class="cost-head"><small>Cloud run rate</small><strong>$1.7K–$2.7K / mo</strong></div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <div class="eyebrow">Executive high-level design · Two continents</div>
+          <h1 id="page-title">Resilient Azure hosting for cargo operations</h1>
+          <p>Secure edge delivery, horizontally scaled Linux services, managed data, and a minimum-capacity disaster recovery site—operated under a dedicated hosting SLA.</p>
+        </div>
+        <div class="metrics" aria-label="Service level targets">
+          <div class="metric"><b>99.9%</b><span>Availability</span></div>
+          <div class="metric"><b>≤15 min</b><span>Recovery point</span></div>
+          <div class="metric"><b>≤4 hr</b><span>Recovery time</span></div>
+        </div>
+      </section>
+
+      <div class="flowbar"><div class="flowbar-label"><span class="pulse"></span> Live request path</div><div class="flowline"></div></div>
+
+      <section class="architecture" aria-label="Infrastructure architecture">
+        <div class="stack left">
+          <article class="panel edge">
+            <div class="panel-head"><div><div class="zone">01 · Global edge</div><h2>Cloudflare</h2></div></div>
+            <div class="service-list">
+              <div class="service"><span class="icon orange"><svg viewBox="0 0 24 24"><path d="M6 18h12a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 9a4.5 4.5 0 0 0 0 9Z"/></svg></span><span><b>WAF + DDoS</b><small>Managed rules · bot protection</small></span></div>
+              <div class="service"><span class="icon orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></span><span><b>CDN + DNS</b><small>TLS · global failover</small></span></div>
+            </div>
+          </article>
+
+          <article class="panel nonprod">
+            <div class="panel-head"><div><div class="zone">04 · Validation</div><h2>Non-production</h2></div></div>
+            <div class="envs">
+              <div class="env"><strong>Dev</strong><span>Own database</span></div>
+              <div class="env"><strong>QA / Test</strong><span>Shared 2 VMs</span></div>
+              <div class="env"><strong>UAT</strong><span>Own database</span></div>
+              <div class="env"><strong>Staging</strong><span>Shared 2 VMs</span></div>
+            </div>
+            <p class="panel-note" style="margin:7px 0 0">Independent configuration and delivery stages. Servers shut down after hours when not in use.</p>
+          </article>
+        </div>
+
+        <div class="stack center">
+          <article class="panel primary">
+            <div class="panel-head">
+              <div><div class="zone">02 · Site A · Asia</div><h2>UAE North (Dubai) — Primary</h2><div class="panel-note">Private subnets · load balancer · NSGs · Linux</div></div>
+              <span class="status live">ACTIVE</span>
+            </div>
+            <div class="scale-grid">
+              <div class="scale-card"><div class="scale-top"><b>Web frontend</b><span class="nodes"><i class="node"></i><i class="node"></i><i class="node elastic"></i></span></div><small>Nginx · VM Scale Set · 2 → 3</small></div>
+              <div class="scale-card"><div class="scale-top"><b>Public services</b><span class="nodes"><i class="node"></i><i class="node"></i><i class="node elastic"></i></span></div><small>Tracking · schedule · availability</small></div>
+              <div class="scale-card"><div class="scale-top"><b>Portal + admin</b><span class="nodes"><i class="node"></i><i class="node"></i><i class="node elastic"></i></span></div><small>Agents · invoices · CMS services</small></div>
+              <div class="scale-card"><div class="scale-top"><b>Background workers</b><span class="nodes"><i class="node"></i><i class="node"></i><i class="node elastic"></i></span></div><small>Notifications · reports · sync</small></div>
+            </div>
+            <div class="network-rail">STATELESS SERVICES · AUTOMATIC SCALE-OUT</div>
+            <div class="data-grid">
+              <div class="data-item"><strong>Azure SQL</strong><span>Primary · built-in HA</span></div>
+              <div class="data-item"><strong>Cosmos DB</strong><span>Key-value cache · TTL</span></div>
+              <div class="data-item"><strong>Service Bus</strong><span>Managed queues</span></div>
+              <div class="data-item"><strong>Blob Storage</strong><span>Geo-redundant files</span></div>
+            </div>
+          </article>
+
+          <article class="panel ops">
+            <div class="panel-head"><div><div class="zone">06 · Shared operations plane</div><h2>Secure, observable, self-healing</h2></div></div>
+            <div class="ops-row">
+              <div class="ops-item"><i></i><span>Azure Monitor + logs</span></div>
+              <div class="ops-item"><i></i><span>Health probes + replace</span></div>
+              <div class="ops-item"><i></i><span>VPN jump host + MFA</span></div>
+              <div class="ops-item"><i></i><span>Backups + restore tests</span></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="stack right">
+          <article class="panel dr">
+            <div class="panel-head">
+              <div><div class="zone">03 · Site B · Europe</div><h2>Italy North (Milan) — DR</h2><div class="panel-note">Minimum-capacity standby · alternative: West Europe</div></div>
+              <span class="status warm">STANDBY</span>
+            </div>
+            <div class="replication">
+              <div class="rep-row"><span>DNS failover route</span><b>READY</b></div>
+              <div class="rep-row"><span>SQL geo-replication</span><b>LIVE</b></div>
+              <div class="rep-row"><span>Cosmos replication</span><b>LIVE</b></div>
+            </div>
+            <div class="dr-services">
+              <div class="dr-item"><strong>2 small VMs</strong><span>All services</span></div>
+              <div class="dr-item"><strong>SQL replica</strong><span>Smaller compute</span></div>
+              <div class="dr-item"><strong>Cosmos DB</strong><span>Regional replica</span></div>
+              <div class="dr-item"><strong>Load balancer</strong><span>NSG protected</span></div>
+            </div>
+            <div class="failover">FAILOVER → PROMOTE SQL + SCALE TO PRODUCTION</div>
+          </article>
+
+          <article class="panel" style="border-left:2px solid var(--amber)">
+            <div class="panel-head"><div><div class="zone">07 · Resilience policy</div><h2>Protected data</h2></div></div>
+            <div class="envs">
+              <div class="env"><strong>14 days</strong><span>Point-in-time SQL</span></div>
+              <div class="env"><strong>12 months</strong><span>Monthly SQL retention</span></div>
+              <div class="env"><strong>30 days</strong><span>Blob soft delete</span></div>
+              <div class="env"><strong>2× yearly</strong><span>DR failover test</span></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="panel devops">
+          <div class="panel-head">
+            <div><div class="zone">05 · Delivery rail</div><h2>Azure DevOps</h2><div class="panel-note">Governed delivery across every environment</div></div>
+            <span class="icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 9-4v4l7 1v8l-7 5v-4l-9-2zM4 7l9 4v6M13 7v4l7-3"/></svg></span>
+          </div>
+          <div class="pipeline">
+            <div class="pipe-step"><span class="pipe-num">01</span><span><b>Azure Repos</b><small>Source + IaC</small></span></div>
+            <div class="pipe-step"><span class="pipe-num">02</span><span><b>Azure Pipelines</b><small>Build + release</small></span></div>
+            <div class="pipe-step"><span class="pipe-num">03</span><span><b>Quality gates</b><small>Approval controls</small></span></div>
+            <div class="pipe-step"><span class="pipe-num">04</span><span><b>Terraform + Ansible</b><small>Repeatable setup</small></span></div>
+          </div>
+          <div class="release-path">DEV → QA → UAT → STAGING → PRODUCTION</div>
+        </article>
+      </section>
+
+      <section class="commercial" aria-label="Commercial summary">
+        <article class="commercial-card setup"><div class="number">$8,000</div><div><h3>Infrastructure setup · fixed</h3><p>2 sprints · 4 weeks · 160 hours · 50% per accepted sprint</p></div></article>
+        <article class="commercial-card"><div class="number">$1.7K–$2.7K</div><div><h3>Azure + Cloudflare · monthly</h3><p>Paid directly by the client. Approximate PAYG Linux list prices.</p></div></article>
+        <article class="commercial-card support"><div class="number">$500+</div><div><h3>On-call support · monthly</h3><p>Minimum covers 10 business hours; $50/hr business, $75/hr after hours.</p></div></article>
+      </section>
+
+      <section class="pricing-ledger" aria-labelledby="pricing-title">
+        <div class="pricing-title">
+          <div><div class="zone">08 · Complete commercial schedule</div><h2 id="pricing-title">All proposal costs</h2></div>
+          <p>Bill A is invoiced by us. Bill B is paid by the client directly to Microsoft and Cloudflare; we do not resell or mark up cloud consumption.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-column">
+            <div class="price-column-head"><h3>Bill A · Our services</h3><span>USD</span></div>
+            <div class="price-row"><span>Infrastructure setup · 160 hrs × $50</span><strong>$8,000 fixed</strong></div>
+            <div class="price-row"><span>Sprint 1 acceptance · 50%</span><strong>$4,000</strong></div>
+            <div class="price-row"><span>Sprint 2 acceptance · 50%</span><strong>$4,000</strong></div>
+            <div class="price-row"><span>Monthly minimum · includes 10 business hrs</span><strong>$500 / mo</strong></div>
+            <div class="price-row"><span>Business hours · Sun–Thu, Egypt time</span><strong>$50 / hr</strong></div>
+            <div class="price-row"><span>After hours, weekends and holidays</span><strong>$75 / hr</strong></div>
+            <div class="price-row"><span>Critical call-out</span><strong>2 hrs min</strong></div>
+            <div class="price-row"><span>Man-day · business hours</span><strong>$400 / day</strong></div>
+            <div class="price-row total"><span>Year one · setup + support</span><strong>$14K–$23K</strong></div>
+          </article>
+
+          <article class="price-column">
+            <div class="price-column-head"><h3>Bill B · Azure environments</h3><span>USD / month</span></div>
+            <div class="price-row"><span>Site A Production · 8–12 VMs + managed services</span><strong>$1,040–$1,340</strong></div>
+            <div class="price-row"><span>Site A service VMs · 4 groups × 2–3</span><strong>$504–$756</strong></div>
+            <div class="price-row"><span>Azure SQL primary · General Purpose</span><strong>~$350</strong></div>
+            <div class="price-row"><span>Cosmos DB / Service Bus / Blob / LB / logs / jump / disks</span><strong>$185–$235</strong></div>
+            <div class="price-row"><span>Site B DR · 2 VMs + managed replicas</span><strong>$300–$410</strong></div>
+            <div class="price-row"><span>DR service VMs</span><strong>~$140</strong></div>
+            <div class="price-row"><span>DR SQL geo-replica · smaller compute</span><strong>$120–$180</strong></div>
+            <div class="price-row"><span>DR Cosmos / load balancer / disks</span><strong>$40–$90</strong></div>
+            <div class="price-row"><span>Dev / QA environment</span><strong>$110–$160</strong></div>
+            <div class="price-row"><span>UAT / Staging environment</span><strong>$140–$190</strong></div>
+            <div class="price-row"><span>Non-production cache + queue</span><strong>~$10</strong></div>
+          </article>
+
+          <article class="price-column">
+            <div class="price-column-head"><h3>Bill B · Shared, totals &amp; variables</h3><span>USD</span></div>
+            <div class="price-row"><span>Cloudflare Pro to Business</span><strong>$25–$250 / mo</strong></div>
+            <div class="price-row"><span>Outbound traffic / egress</span><strong>$20–$260 / mo</strong></div>
+            <div class="price-row"><span>Azure DevOps hosted build agents</span><strong>~$40 / mo</strong></div>
+            <div class="price-row"><span>SQL long-term backup retention</span><strong>~$20 / mo</strong></div>
+            <div class="price-row optional"><span>Optional Azure Firewall Basic · per site</span><strong>~$290 / mo</strong></div>
+            <div class="price-row"><span>DR active scale-up · pro-rata for failover days</span><strong>+$800–$1K / mo</strong></div>
+            <div class="price-row total"><span>Normal operation · PAYG</span><strong>$1.7K–$2.7K / mo</strong></div>
+            <div class="price-row"><span>Normal operation · PAYG yearly</span><strong>$20K–$32K / yr</strong></div>
+            <div class="price-row"><span>1-year reserved production VMs</span><strong>$1.55K–$2.5K / mo</strong></div>
+            <div class="price-row"><span>Reserved scenario yearly</span><strong>$19K–$30K / yr</strong></div>
+            <div class="price-row"><span>Total footprint · all environments</span><strong>14–18 small VMs</strong></div>
+          </article>
+        </div>
+        <div class="year-one" aria-label="Year one totals">
+          <div class="year-cell"><span>One-time setup</span><strong>$8,000</strong></div>
+          <div class="year-cell"><span>Monthly minimum · services + cloud</span><strong>~$2,200</strong></div>
+          <div class="year-cell"><span>Bill A · Year one</span><strong>$14K–$23K</strong></div>
+          <div class="year-cell grand"><span>Combined year one</span><strong>$34K–$55K</strong></div>
+        </div>
+        <div class="year-one" aria-label="Region cost comparison">
+          <div class="year-cell"><span>Tables use Italy North prices · UAE North is ~10–15% higher</span><strong>Region note</strong></div>
+          <div class="year-cell"><span>Proposed · A = UAE ~$1,150–1,540 · B = Italy ~$300–410</span><strong>+~$100–200 / mo</strong></div>
+          <div class="year-cell"><span>Reverse · A = Italy ~$1,040–1,340 · B = UAE ~$330–470</span><strong>+~$30–60 / mo</strong></div>
+          <div class="year-cell grand"><span>UAE primary vs Italy primary · same ratio on DR failover</span><strong>+~$70–140 / mo</strong></div>
+        </div>
+        <p class="panel-note" style="margin-top:8px">These figures are rough estimates, not accurate quotations. Actual costs depend on the final regions, usage, traffic and Microsoft pricing at purchase time, and will be confirmed with the Azure Pricing Calculator. This sizing is an initial baseline: features, components and sizes may be added or adjusted during hosting based on actual usage, performance and monitoring results. Changes that affect cost are agreed with the client beforehand.</p>
+      </section>
+
+      <footer>
+        <span><strong>Scope:</strong> hosting, infrastructure, operations and SLA. Application development and integrations are excluded.</span>
+        <span>Final figures will be confirmed with the Azure Pricing Calculator.</span>
+        <button class="print" type="button" onclick="window.print()">PRINT / SAVE PDF</button>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
