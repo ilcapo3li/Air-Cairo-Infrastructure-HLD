@@ -17,8 +17,9 @@
 
 | Format | File | Description |
 |---|---|---|
-| PDF | [Air-Cairo-Cargo-Hosting-Infrastructure-HLD.pdf](Air-Cairo-Cargo-Hosting-Infrastructure-HLD.pdf) | High-level design overview, A3 landscape |
-| HTML | [Air-Cairo-Cargo-Hosting-Infrastructure-HLD.html](Air-Cairo-Cargo-Hosting-Infrastructure-HLD.html) | High-level design overview (open in a browser) |
+| PDF | [AirCairo-Infra-Proposal-v3.pdf](AirCairo-Infra-Proposal-v3.pdf) | Full technical and commercial proposal (11 pages, A4) |
+| PDF | [AirCairo-Infra-HLD-v3.pdf](AirCairo-Infra-HLD-v3.pdf) | High-level design overview (1 page, A3 landscape) |
+| HTML | [AirCairo-Infra-Proposal-v3.html](AirCairo-Infra-Proposal-v3.html) | High-level design overview, source of the HLD PDF (open in a browser) |
 
 ---
 
