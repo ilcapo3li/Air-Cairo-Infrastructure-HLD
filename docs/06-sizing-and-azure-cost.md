@@ -3,7 +3,20 @@
 # 6. Sizing and Estimated Azure Cost (monthly)
 
 > **Billed by Microsoft and Cloudflare directly to the client (Bill B). Not part of our fees.**
-> Approximate list prices, PAYG, Linux. Small VM: D2as v5 (2 vCPU, 8 GB) ≈ $63. UAE North is approximately 10–15% higher. Final figures will be confirmed with the Azure Pricing Calculator.
+> Approximate list prices, PAYG, Linux. Small VM: D2as v5 (2 vCPU, 8 GB) ≈ $63, based on European (Italy North) pricing. Final figures will be confirmed with the Azure Pricing Calculator.
+
+> **Regional price note:** UAE North is approximately 10–15% more expensive than Italy North. The tables below use Italy North prices, so the region chosen for each site changes the total:
+>
+> | Layout | Site A (production) | Site B (DR) | Effect on monthly cost |
+> |---|---|---|---|
+> | **Proposed:** Site A UAE North, Site B Italy North | ~1,150 – 1,540 (+~100–200) | ~300 – 410 (no change) | **+~100 – 200** |
+> | Alternative: Site A Italy North, Site B UAE North | ~1,040 – 1,340 (no change) | ~330 – 470 (+~30–60) | +~30 – 60 |
+>
+> Hosting the primary site in the UAE costs roughly **$70 – 140 more per month** than hosting it in Italy, because the larger production footprint sits in the more expensive region. The same ratio applies to the extra cost during a DR failover.
+>
+> **These figures are rough estimates, not accurate quotations.** Actual costs depend on the final regions, usage, traffic and Microsoft pricing at the time of purchase, and will be confirmed with the Azure Pricing Calculator.
+>
+> **This sizing is an initial baseline.** Features, components and sizes may be added or adjusted during hosting, based on actual usage, performance and monitoring results. Any change that affects cost will be discussed and agreed with the client beforehand.
 
 ### 6.1 Site A — Production
 | Item | Detail | $/month |

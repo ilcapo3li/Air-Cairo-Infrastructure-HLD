@@ -5,8 +5,8 @@
 ### 4.1 Regions
 | Site | Azure region | Continent | Role |
 |---|---|---|---|
-| Site A | Italy North (Milan) — alternative: West Europe | Europe | Primary, active |
-| Site B | UAE North (Dubai) | Asia | DR, minimum capacity, scales up on failover |
+| Site A | UAE North (Dubai) | Asia | Primary, active |
+| Site B | Italy North (Milan) — alternative: West Europe | Europe | DR, minimum capacity, scales up on failover |
 
 Microsoft Azure has no region in Egypt. Both proposed regions provide low latency to Egypt. Data residency is subject to client confirmation (Law 151/2020).
 
@@ -22,7 +22,7 @@ Microsoft Azure has no region in Egypt. Both proposed regions provide low latenc
 flowchart TB
   U[Public users / Agents / Mobile app] --> EDGE[Edge: WAF + DDoS + Bot + CDN<br/>DNS failover]
 
-  subgraph A[Site A - Europe - Primary]
+  subgraph A[Site A - Asia - Primary]
     LBA[Load balancer + NSG]
     S1[Web frontend<br/>2-3 small VMs]
     S2[Public services<br/>tracking, schedule, availability<br/>2-3 small VMs]
@@ -33,7 +33,7 @@ flowchart TB
     SB[Service Bus<br/>queues]
   end
 
-  subgraph B[Site B - Asia - DR]
+  subgraph B[Site B - Europe - DR]
     LBB[Load balancer + NSG]
     DRS[All services<br/>2 small VMs<br/>scale out on failover]
     SQLB[(Azure SQL geo-replica<br/>smaller size<br/>scale up on failover)]

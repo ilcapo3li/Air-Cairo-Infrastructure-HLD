@@ -9,3 +9,4 @@
 6. Setup scope is fixed to [Section 8](08-delivery-plan.md). Additional work is billed at on-call hourly rates.
 7. Unused minimum hours do not roll over.
 8. Prices are valid for 30 days.
+9. The proposed architecture and sizing are an initial baseline. Features and sizes may be added or adjusted during hosting based on actual usage and monitoring results; changes affecting cost or scope are agreed with the client beforehand.

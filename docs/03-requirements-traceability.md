@@ -9,7 +9,7 @@
 | H-03 | Network firewall | §2.4 | Stateful Network Security Groups + host firewalls; optional Azure Firewall Basic |
 | H-04 | Web application firewall | §2.4 | Edge WAF with managed rule sets (Cloudflare) |
 | H-05 | DDoS prevention and bot mitigation | §2.4 | Edge DDoS and bot protection (Cloudflare) + Azure basic DDoS protection |
-| H-06 | Two sites, two geo locations, preferably two continents, HA and DR | §2.4 | Site A: Europe (Italy North); Site B: Asia (UAE North) |
+| H-06 | Two sites, two geo locations, preferably two continents, HA and DR | §2.4 | Site A: Asia (UAE North); Site B: Europe (Italy North) |
 | H-07 | Minimum bandwidth 3TB per site | §2.4 | Capacity provided at both sites |
 | H-08 | Staging environment | §2.4 | Dedicated UAT/Staging environment |
 | H-09 | Test environment by vendor | §2.4 | Dedicated Dev/QA environment |
