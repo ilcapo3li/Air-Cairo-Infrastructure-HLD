@@ -13,6 +13,15 @@
 
 ---
 
+## Downloads
+
+| Format | File | Description |
+|---|---|---|
+| PDF | [Air-Cairo-Cargo-Hosting-Infrastructure-HLD.pdf](Air-Cairo-Cargo-Hosting-Infrastructure-HLD.pdf) | High-level design overview, A3 landscape |
+| HTML | [Air-Cairo-Cargo-Hosting-Infrastructure-HLD.html](Air-Cairo-Cargo-Hosting-Infrastructure-HLD.html) | High-level design overview (open in a browser) |
+
+---
+
 ## Contents
 
 | # | Document | Description |
