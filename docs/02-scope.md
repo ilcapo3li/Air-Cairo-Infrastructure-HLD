@@ -1,4 +1,4 @@
-[← Back to index](../Readme.md)
+[← Back to index](../README.md)
 
 # 2. Scope
 

@@ -1,4 +1,4 @@
-[← Back to index](../Readme.md)
+[← Back to index](../README.md)
 
 # 8. Delivery Plan — 2 Sprints (4 Weeks, 160 Hours)
 

@@ -1,4 +1,4 @@
-[← Back to index](../Readme.md)
+[← Back to index](../README.md)
 
 # 10. Assumptions
 1. Application services are **stateless** and run on Linux, with a health-check endpoint each.

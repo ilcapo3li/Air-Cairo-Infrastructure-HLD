@@ -1,4 +1,4 @@
-[← Back to index](../Readme.md)
+[← Back to index](../README.md)
 
 # 11. Points for Client Confirmation
 1. Two sites: is a minimum-capacity DR site that scales up on failover acceptable?
